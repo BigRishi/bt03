@@ -17,6 +17,30 @@ export const WalletProvider = ({ children }) => {
     const [isConnecting, setIsConnecting] = useState(false);
     const [error, setError] = useState(null);
 
+    const HARDHAT_CHAIN_ID = '0x7A69'; // 31337 in hex
+
+    const switchToHardhat = useCallback(async () => {
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: HARDHAT_CHAIN_ID }],
+            });
+        } catch (switchError) {
+            // Chain not added yet — add it
+            if (switchError.code === 4902) {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: HARDHAT_CHAIN_ID,
+                        chainName: 'Hardhat Local',
+                        rpcUrls: ['http://127.0.0.1:8545'],
+                        nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                    }],
+                });
+            }
+        }
+    }, []);
+
     const connectWallet = useCallback(async () => {
         if (!window.ethereum) {
             setError('MetaMask is not installed. Please install MetaMask to use this application.');
@@ -27,6 +51,9 @@ export const WalletProvider = ({ children }) => {
         setError(null);
 
         try {
+            // Force switch to Hardhat network first
+            await switchToHardhat();
+
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
             const browserProvider = new ethers.BrowserProvider(window.ethereum);
             const walletSigner = await browserProvider.getSigner();
@@ -42,7 +69,7 @@ export const WalletProvider = ({ children }) => {
         } finally {
             setIsConnecting(false);
         }
-    }, []);
+    }, [switchToHardhat]);
 
     const disconnectWallet = useCallback(() => {
         setAccount(null);

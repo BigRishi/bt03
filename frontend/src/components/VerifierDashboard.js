@@ -93,13 +93,14 @@ const VerifierDashboard = ({ contract }) => {
                     addToHistory(proof.credentialHash, onChainResult);
                 } catch (contractErr) {
                     console.error('Contract verification error:', contractErr);
-                    // Fallback to local verification
-                    setVerificationResult({ valid: localValid, method: 'local-fallback' });
+                    // On-chain verification failed — credential doesn't exist or proof is invalid
+                    const reason = contractErr.reason || contractErr.message || 'Verification failed';
+                    setVerificationResult({ valid: false, method: 'on-chain' });
                     setStatus({
-                        type: localValid ? 'success' : 'error',
-                        message: `Local verification: ${localValid ? 'Valid' : 'Invalid'} (on-chain not available: ${contractErr.reason || 'contract error'})`
+                        type: 'error',
+                        message: `Verification failed: ${reason}`
                     });
-                    addToHistory(proof.credentialHash, localValid);
+                    addToHistory(proof.credentialHash, false);
                 }
             } else {
                 // No contract, use local verification
