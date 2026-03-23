@@ -96,6 +96,12 @@ const IssuerDashboard = ({ contract }) => {
             const credentialHash = generateCredentialHash(secret, credentialData);
             const metadataURI = `ipfs://demo/${Date.now()}`;
 
+            // Compute the proof key hash: keccak256(keccak256(secret))
+            // This commitment is stored on-chain and checked during verification
+            // Only someone who knows the secret can produce a proof where keccak256(a[0]) matches
+            const secretHash = ethers.keccak256(ethers.toUtf8Bytes(secret));
+            const proofKeyHash = ethers.keccak256(ethers.solidityPacked(['uint256'], [BigInt(secretHash)]));
+
             setStatus({ type: 'loading', message: 'Issuing credential on blockchain...' });
 
             const connectedContract = contract.connect(signer);
@@ -103,7 +109,8 @@ const IssuerDashboard = ({ contract }) => {
                 credentialHash,
                 holderAddress,
                 credentialType,
-                metadataURI
+                metadataURI,
+                proofKeyHash
             );
 
             setStatus({ type: 'loading', message: 'Waiting for confirmation...' });

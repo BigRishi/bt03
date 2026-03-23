@@ -29,6 +29,7 @@ contract CredentialRegistry {
         uint256 issuedAt;
         bool isValid;
         bool exists;
+        bytes32 proofKeyHash; // keccak256(keccak256(secret)) — binds proof to issuer's secret
     }
     
     // credentialHash => Credential
@@ -136,11 +137,13 @@ contract CredentialRegistry {
         bytes32 _credentialHash,
         address _holder,
         string memory _credentialType,
-        string memory _metadataURI
+        string memory _metadataURI,
+        bytes32 _proofKeyHash
     ) external onlyIssuer {
         require(!credentials[_credentialHash].exists, "Credential already exists");
         require(_holder != address(0), "Invalid holder address");
         require(bytes(_credentialType).length > 0, "Credential type required");
+        require(_proofKeyHash != bytes32(0), "Proof key hash required");
         
         credentials[_credentialHash] = Credential({
             issuer: msg.sender,
@@ -149,7 +152,8 @@ contract CredentialRegistry {
             metadataURI: _metadataURI,
             issuedAt: block.timestamp,
             isValid: true,
-            exists: true
+            exists: true,
+            proofKeyHash: _proofKeyHash
         });
         
         holderCredentials[_holder].push(_credentialHash);
@@ -206,7 +210,22 @@ contract CredentialRegistry {
             "Public input does not match credential hash"
         );
         
-        // Verify the ZK proof using the Groth16 verifier
+        // Verify that the proof was generated with the correct secret
+        // a[0] = keccak256(secret), so keccak256(a[0]) must match the stored proofKeyHash
+        bytes32 computedKeyHash = keccak256(abi.encodePacked(a[0]));
+        if (computedKeyHash != credentials[_credentialHash].proofKeyHash) {
+            // Proof was generated with a wrong secret — reject immediately
+            verificationHistory.push(VerificationRecord({
+                verifier: msg.sender,
+                credentialHash: _credentialHash,
+                result: false,
+                timestamp: block.timestamp
+            }));
+            emit CredentialVerified(_credentialHash, msg.sender, false, block.timestamp);
+            return false;
+        }
+        
+        // Verify proof internal consistency using the Groth16 verifier
         bool proofValid = verifier.verifyProof(a, b, c, input);
         
         // Record verification

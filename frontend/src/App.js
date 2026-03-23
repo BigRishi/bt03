@@ -14,7 +14,7 @@ const CREDENTIAL_REGISTRY_ABI = [
   "function issuerNames(address) view returns (string)",
   "function selfRegisterIssuer(string) external",
   "function registerIssuer(address, string) external",
-  "function issueCredential(bytes32, address, string, string) external",
+  "function issueCredential(bytes32, address, string, string, bytes32) external",
   "function revokeCredential(bytes32) external",
   "function verifyCredentialProof(bytes32, uint256[2], uint256[2][2], uint256[2], uint256[1]) external returns (bool)",
   "function getCredential(bytes32) view returns (address, address, string, string, uint256, bool)",

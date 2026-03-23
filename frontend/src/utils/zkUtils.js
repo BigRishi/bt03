@@ -6,11 +6,11 @@ import { ethers } from 'ethers';
  * Uses keccak256 as a simplified version of Poseidon hash for the demo.
  */
 export const generateCredentialHash = (secret, credentialData) => {
-    const encoded = ethers.solidityPacked(
-        ['string', 'string'],
-        [secret, credentialData]
+    const secretHash = ethers.keccak256(ethers.toUtf8Bytes(secret));
+    const dataHash = ethers.keccak256(ethers.toUtf8Bytes(credentialData));
+    return ethers.keccak256(
+        ethers.solidityPacked(['bytes32', 'bytes32'], [secretHash, dataHash])
     );
-    return ethers.keccak256(encoded);
 };
 
 /**
@@ -94,6 +94,9 @@ export const verifyProofLocally = (proof) => {
             ...proof.c,
             ...proof.input
         ].every(v => BigInt(v) !== 0n);
+
+        // Security check: public input must match the combined hash b[0][0]
+        if (proof.input[0] !== proof.b[0][0]) return false;
 
         return allNonZero;
     } catch {

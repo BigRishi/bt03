@@ -69,18 +69,20 @@ const VerifierDashboard = ({ contract }) => {
                     setStatus({ type: 'loading', message: 'Waiting for on-chain verification...' });
                     const receipt = await tx.wait();
 
-                    // Check for CredentialVerified event
-                    const event = receipt.logs.find(log => {
+                    // Default to INVALID — only set true if event explicitly says so
+                    let onChainResult = false;
+
+                    // Parse all logs looking for the CredentialVerified event
+                    for (const log of receipt.logs) {
                         try {
                             const parsed = contract.interface.parseLog(log);
-                            return parsed && parsed.name === 'CredentialVerified';
-                        } catch { return false; }
-                    });
-
-                    let onChainResult = true;
-                    if (event) {
-                        const parsed = contract.interface.parseLog(event);
-                        onChainResult = parsed.args[2]; // result field
+                            if (parsed && parsed.name === 'CredentialVerified') {
+                                onChainResult = parsed.args[2]; // result field (bool)
+                                break;
+                            }
+                        } catch {
+                            // Not our event, skip
+                        }
                     }
 
                     setVerificationResult({ valid: onChainResult, method: 'on-chain' });

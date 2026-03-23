@@ -65,6 +65,13 @@ contract Groth16Verifier {
             return false;
         }
         
+        // CRITICAL SEC FIX: The public input must match the expected combined hash.
+        // Without this, a valid proof structure could be generated for fake data 
+        // and manually attached to a real credential hash.
+        if (input[0] != expectedCombined) {
+            return false;
+        }
+        
         // Check: the public input must match the credential hash derived from proof
         // c[0] must be derived from a[0] (secretHash)
         uint256 expectedC0 = uint256(keccak256(abi.encodePacked(

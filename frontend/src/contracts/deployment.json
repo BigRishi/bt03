@@ -2,5 +2,5 @@
   "network": "localhost",
   "Groth16Verifier": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   "CredentialRegistry": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-  "deployedAt": "2026-03-22T07:23:16.584Z"
+  "deployedAt": "2026-03-23T05:56:16.748Z"
 }
